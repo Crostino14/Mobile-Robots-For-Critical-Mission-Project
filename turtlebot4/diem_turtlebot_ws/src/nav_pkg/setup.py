@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "camera_node = nav_pkg.camera_node:main",
+            "cone_detector_node_turtlebot = nav_pkg.cone_detector_turtlebot_node:main",
+            "cone_passage_planner_node = nav_pkg.cone_passage_planner_node:main",
             "navigation_node = nav_pkg.navigation_node:main",
             "discovery_node = nav_pkg.discovery_node:main",
         ],
