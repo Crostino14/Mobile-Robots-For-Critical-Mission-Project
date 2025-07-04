@@ -2,53 +2,48 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from turtlebot4_navigation.turtlebot4_navigator import TurtleBot4Navigator
-import math
+import json
 import argparse
 
 class NavigationNode(Node):
-    def __init__(self, start_pose, goal_pose):
+    def __init__(self, starting_point, start_orientation, goal_point, goal_orientation):
         super().__init__('navigation_node')
         self.navigator = TurtleBot4Navigator()
-        self.goal_pose = goal_pose
+        self.goal_pose = self.navigator.getPoseStamped(goal_point, goal_orientation)
+        
+        initial_pose = self.navigator.getPoseStamped(starting_point, start_orientation)
 
         self.get_logger().info("Setting initial pose...")
-        self.navigator.setInitialPose(start_pose)
+        self.navigator.clearAllCostmaps()
+        self.navigator.setInitialPose(initial_pose)
 
         self.get_logger().info("Waiting for Nav2 to become active...")
         self.navigator.waitUntilNav2Active()
 
         self.get_logger().info("Sending goal to Nav2...")
-        self.navigator.goToPose(goal_pose)
+        self.navigator.goToPose(self.goal_pose)
 
-        # Pubblica anche su /final_goal per il planner
-        self.final_goal_pub = self.create_publisher(PoseStamped, '/final_goal', 10)
-        self.get_logger().info("Publishing final goal on /final_goal")
-        self.final_goal_pub.publish(goal_pose)
+        # Undock
+        self.navigator.undock()
 
-def create_pose(x, y, yaw_deg):
-    pose = PoseStamped()
-    pose.header.frame_id = 'map'
-    pose.pose.position.x = x
-    pose.pose.position.y = y
-    angle = math.radians(yaw_deg)
-    pose.pose.orientation.z = math.sin(angle / 2.0)
-    pose.pose.orientation.w = math.cos(angle / 2.0)
-    return pose
 
 def main(args=None):
     rclpy.init(args=args)
     parser = argparse.ArgumentParser()
-    parser.add_argument('--start_x', type=float, required=True)
-    parser.add_argument('--start_y', type=float, required=True)
-    parser.add_argument('--start_yaw', type=float, default=0.0)
-    parser.add_argument('--goal_x', type=float, required=True)
-    parser.add_argument('--goal_y', type=float, required=True)
-    parser.add_argument('--goal_yaw', type=float, default=0.0)
-    args = parser.parse_args()
+    
+    with open("diem_turtlebot_ws/src/nav_pkg/nav_pkg/navigation_config.json", "r") as f:
+        config = json.load(f)
 
-    start_pose = create_pose(args.start_x, args.start_y, args.start_yaw)
-    goal_pose = create_pose(args.goal_x, args.goal_y, args.goal_yaw)
+    start_x = config["start"]["x"]
+    start_y = config["start"]["y"]
+    start_orientation = config["start"]["orientation"]
+    goal_x = config["goal"]["x"]
+    goal_y = config["goal"]["y"]
+    goal_orientation = config["goal"]["orientation"]
 
-    node = NavigationNode(start_pose, goal_pose)
+    starting_point = [start_x, start_y]
+    goal_point = [goal_x, goal_y]
+
+    node = NavigationNode(starting_point, start_orientation, goal_point, goal_orientation)
     rclpy.spin(node)
     rclpy.shutdown()

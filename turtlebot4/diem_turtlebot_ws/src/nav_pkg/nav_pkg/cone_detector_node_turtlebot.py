@@ -45,11 +45,11 @@ class ConeDetectorNode(Node):
         self.bridge = CvBridge()
         self.subscription = self.create_subscription(
             Image,
-            '/oak/rgb/preview/image_raw',
+            '/oakd/rgb/preview/image_raw',
             self.image_callback,
             10)
         
-        self.model = YOLO("./cone.pt")
+        self.model = YOLO("diem_turtlebot_ws/src/nav_pkg/nav_pkg/cone.pt")
         self.get_logger().info("YOLOv8 model loaded successfully")
         self.cone_pub = self.create_publisher(String, '/detected_cones', 10)
 

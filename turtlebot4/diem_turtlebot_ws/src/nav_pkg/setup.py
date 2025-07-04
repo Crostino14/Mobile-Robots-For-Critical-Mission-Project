@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+from glob import glob
+import os
 
 package_name = 'nav_pkg'
 
@@ -21,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             "cone_detector_node_turtlebot = nav_pkg.cone_detector_turtlebot_node:main",
+            "cone_detector_node = nav_pkg.cone_detector_node:main",
             "cone_passage_planner_node = nav_pkg.cone_passage_planner_node:main",
             "navigation_node = nav_pkg.navigation_node:main",
             "discovery_node = nav_pkg.discovery_node:main",

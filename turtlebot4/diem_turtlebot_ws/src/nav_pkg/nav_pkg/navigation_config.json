@@ -1,0 +1,12 @@
+{
+  "start": {
+    "x": 1.0,
+    "y": 2.0, 
+    "orientation": "TurtleBot4Directions.NORTH"
+  },
+  "goal": {
+    "x": 5.5,
+    "y": -1.2,
+    "orientation": "TurtleBot4Directions.NORTH"
+  }
+}
