@@ -77,57 +77,56 @@ class PoseEstimatorNode(Node):
             self.get_logger().warn("Camera not yet ready. Skipping cone callback.")
             return
         
-        if msg.detections:
-            closest_cone = min(msg.detections, key=lambda c: c.depth)
+        closest_cone = min(msg.detections, key=lambda c: c.depth)
 
-            color = closest_cone.color
-            x1 = closest_cone.x_min
-            x2 = closest_cone.x_max
-            y1 = closest_cone.y_min
-            y2 = closest_cone.y_max
-            depth = closest_cone.depth
-            
-            # PER SETTEMBRE: soglia inferiore testata, abbassando il robot andava troppo oltre i coni, questa era la migliore
+        color = closest_cone.color
+        x1 = closest_cone.x_min
+        x2 = closest_cone.x_max
+        y1 = closest_cone.y_min
+        y2 = closest_cone.y_max
+        depth = closest_cone.depth
+        
+        # PER SETTEMBRE: soglia inferiore testata, abbassando il robot andava troppo oltre i coni, questa era la migliore
 
-            if depth < 1.2:
-                self.get_logger().warn("Cone depth is too close")
-                return
-            if depth > 3.5:
-                self.get_logger().warn("Cone depth is too away")
-                return
-
-            cx_closest = (x1 + x2) // 2
-            cy_closest = (y1 + y2) // 2
-            opposite_color = "yellow" if "red" in color else "red"
-
-            aligned = [
-                c for c in msg.detections
-                if opposite_color in c.color and
-                abs(((c.y_min + c.y_max) // 2) - (cy_closest)) < 30
-            ]
-
-            cone_pose = None
-
-            if aligned:
-                print("\nConi allineati")
-                # 4. Calcola punto medio (pixel o spaziale)
-                partner = min(aligned, key=lambda c: c.depth)  # opzionale
-
-                cx_partner = (partner.x_min + partner.x_max) // 2
-
-                cy_partner = (partner.y_min + partner.y_max) // 2
-
-                cone_pose = self.two_cones_transform(depth, (cx_closest, cy_closest), partner.depth, (cx_partner, cy_partner))
-                
-            else:
-                print(f"\nCono singolo {color} {cx_closest} {cy_closest}")
-                cone_pose = self.single_cone_transform(depth, (cx_closest, cy_closest), color)
-            
-            if cone_pose is not None:
-
-                self.publish_mid_pose(cone_pose)
-
+        if depth < 1.2:
+            self.get_logger().warn("Cone depth is too close")
             return
+        if depth > 3.5:
+            self.get_logger().warn("Cone depth is too away")
+            return
+
+        cx_closest = (x1 + x2) // 2
+        cy_closest = (y1 + y2) // 2
+        opposite_color = "yellow" if "red" in color else "red"
+
+        aligned = [
+            c for c in msg.detections
+            if opposite_color in c.color and
+            abs(((c.y_min + c.y_max) // 2) - (cy_closest)) < 30
+        ]
+
+        cone_pose = None
+
+        if aligned:
+            print("\nConi allineati")
+            # 4. Calcola punto medio (pixel o spaziale)
+            partner = min(aligned, key=lambda c: c.depth)  # opzionale
+
+            cx_partner = (partner.x_min + partner.x_max) // 2
+
+            cy_partner = (partner.y_min + partner.y_max) // 2
+
+            cone_pose = self.two_cones_transform(depth, (cx_closest, cy_closest), partner.depth, (cx_partner, cy_partner))
+            
+        else:
+            print(f"\nCono singolo {color} {cx_closest} {cy_closest}")
+            cone_pose = self.single_cone_transform(depth, (cx_closest, cy_closest), color)
+        
+        if cone_pose is not None:
+
+            self.publish_mid_pose(cone_pose)
+
+        return
     
     def pixel_to_3d(self, x_rgb, y_rgb, depth_m):
         if self.camera_info is None:

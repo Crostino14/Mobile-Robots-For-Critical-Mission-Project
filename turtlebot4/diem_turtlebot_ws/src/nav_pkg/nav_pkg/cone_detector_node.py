@@ -89,7 +89,8 @@ class ConeDetectionNode(Node):
             cone_msg.depth = float(distance)
             detected_cones.append(cone_msg)
 
-        self.publish_cones(detected_cones)
+        if len(detected_cones) > 0:
+            self.publish_cones(detected_cones)
         
         # === 3. VISUALIZATION ===
         self._visualize_detections(img_resized, detected_cones)
