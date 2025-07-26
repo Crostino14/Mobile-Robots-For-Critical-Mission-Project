@@ -255,7 +255,7 @@ class PoseEstimatorNode(Node):
         with self._pose_lock:
             if self.current_robot_pose is None:
                 return None
-            yaw = self.extract_yaw(robot_pose_map)
+            yaw = self.extract_yaw(self.current_robot_pose)
 
         # 3. Calcola il versore laterale sinistro rispetto allo yaw
         lateral = [-math.sin(yaw), math.cos(yaw)]  # Versore laterale sinistro

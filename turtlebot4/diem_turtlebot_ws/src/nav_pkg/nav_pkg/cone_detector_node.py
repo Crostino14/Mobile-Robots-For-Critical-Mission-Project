@@ -94,6 +94,7 @@ class ConeDetectionNode(Node):
         # === 3. VISUALIZATION ===
         self._visualize_detections(img_resized, detected_cones)
 
+    # PER SETTEMBRE: qui potremmo provare a fare come charlotte e usare una dimensione verticale del patch minore rispetto a quella orizzontale, per evitare di prendere troppo pavimento.
     def _get_distance_for_detection(self, detection_data):
         """Estrae la distanza media da una regione del depth map, scalando le coordinate RGB su stereo."""
         if self.depth_image is None:
