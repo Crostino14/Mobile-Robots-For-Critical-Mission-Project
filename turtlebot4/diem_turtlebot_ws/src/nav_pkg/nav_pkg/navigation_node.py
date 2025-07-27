@@ -191,7 +191,9 @@ class NavigationNode(Node):
             self.state = NavState.NAVIGATING_MID
         else:
             self.state = NavState.GO_FINAL
-
+            
+    # PER SETTEMBRE: sta funzione non ha un punto di uscita se non vi è alcun goal intermedio da passare? Usciamo solo se stavamo andando a un goal intermedio e siamo a una certa distanza da esso in questo momento. Forse per risolvere potremmo controllare, dopo l'if avg_pose is not None, se il self.current_goal è None. In questo caso torniamo al recovery (soluzione buttata così)
+    
     def _on_navigating_mid(self):
         self.get_logger().info("Navigating midpoints state")
 
