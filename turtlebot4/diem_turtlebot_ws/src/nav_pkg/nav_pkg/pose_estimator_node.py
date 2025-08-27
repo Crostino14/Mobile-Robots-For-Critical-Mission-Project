@@ -185,7 +185,7 @@ class PoseEstimatorNode(Node):
 
         return x_goal, y_goal
     
-    def single_cone_transform(self, depth_m, pixel, color):
+    """def single_cone_transform(self, depth_m, pixel, color):
         try:
             if not self.tf_buffer.can_transform("map", self.rgb_frame_id, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=1.0)):
                 self.get_logger().warn("Transform not available yet")
@@ -220,10 +220,10 @@ class PoseEstimatorNode(Node):
 
         x_goal = round(point_map.point.x, 2)
         y_goal = round(point_map.point.y, 2)
-        return x_goal, y_goal
+        return x_goal, y_goal"""
     
 
-    """def single_cone_transform(self, depth_m, pixel, color):
+    def single_cone_transform(self, depth_m, pixel, color):
         try:
             if not self.tf_buffer.can_transform("map", self.rgb_frame_id, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=1.0)):
                 self.get_logger().warn("Transform not available yet")
@@ -283,7 +283,7 @@ class PoseEstimatorNode(Node):
         q = pose_stamped.pose.orientation
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        return math.atan2(siny_cosp, cosy_cosp)"""
+        return math.atan2(siny_cosp, cosy_cosp)
 
 def main(args=None):
     rclpy.init(args=args)
