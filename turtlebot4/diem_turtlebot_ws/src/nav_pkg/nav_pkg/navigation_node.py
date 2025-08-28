@@ -244,6 +244,7 @@ class NavigationNode(Node):
 
     def _on_kidnap(self):
         # Logica per gestire il kidnap da rivedere quando la implementazione sarà più chiara
+    
         self.state = NavState.GO_FINAL
 
     def kidnap_detected(self):
