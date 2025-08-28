@@ -224,7 +224,7 @@ class PoseEstimatorNode(Node):
 
         # 4) Crea il gemello virtuale in base_link spostando SOLO lungo y
         #    half_gate = metà larghezza porta desiderata (robot/2 + margine)
-        half_gate = (self.bot_width * 0.5) + self.add_space  # es. 0.1 + 0.3 = 0.4 m
+        half_gate = 0.5  # es. 0.1 + 0.3 = 0.4 m
         #    Il gemello sta a ±(2*half_gate) in y; il centro sarà a ±half_gate.
         color_l = color.lower()
         if "yellow" in color_l:
