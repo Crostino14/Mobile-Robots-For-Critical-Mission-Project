@@ -23,7 +23,7 @@ class ConeDetectionNode(Node):
         self.cone_pub = self.create_publisher(ConeDetectionArray, '/detected_cones', 10)
         
         self.depth_image = None
-        self.model = YOLO("/home/chiara/Documents/GitHub/Mobile-Robots-For-Critical-Mission-Project/turtlebot4/diem_turtlebot_ws/src/nav_pkg/nav_pkg/cone.pt")
+        self.model = YOLO("/home/ago/Documenti/GitHub/Mobile-Robots-For-Critical-Mission-Project/turtlebot4/diem_turtlebot_ws/src/nav_pkg/nav_pkg/cone.pt")
         self.get_logger().info("YOLOv8 model loaded successfully")
         
         # RGB image dimensions (will be set from the first RGB message)
@@ -114,14 +114,6 @@ class ConeDetectionNode(Node):
             return None
         
         local_depth = self.depth_image.copy()
-
-        """crop_x = (depth_width - depth_height) // 2
-
-        cropped_depth = local_depth[:, crop_x:crop_x + depth_height]
-
-        # Scala le coordinate RGB (400x400) alle coordinate dell'immagine di profondità (1280x720)
-        u_stereo = int(cx_rgb * depth_height / self.rgb_width)
-        v_stereo = int(cy_rgb * depth_height / self.rgb_height)"""
 
         # Definisci una piccola regione attorno al centroide stereo
         y_min = max(0, cy_rgb - self.depth_roi_size)

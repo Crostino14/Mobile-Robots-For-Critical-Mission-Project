@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Terminale 1: Localization con mappa
-gnome-terminal --tab --title="Map" -- bash -c "echo 'LOADING MAP'; source ~/turtlebot4/diem_turtlebot_ws/install/setup.bash; cd ~/turtlebot4/diem_turtlebot_ws; ros2 launch turtlebot4_navigation localization.launch.py map:=diem_map.yaml"
+gnome-terminal --tab --title="Map" -- bash -c "echo 'LOADING MAP'; source ~/turtlebot4/diem_turtlebot_ws/install/setup.bash; cd ~/turtlebot4/diem_turtlebot_ws/src/map/; ros2 launch turtlebot4_navigation localization.launch.py map:=diem_map.yaml"
 
 sleep 2
 

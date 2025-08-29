@@ -11,7 +11,7 @@ import statistics
 import threading
 from turtlebot4_navigation.turtlebot4_navigator import TaskResult, TurtleBot4Navigator
 from visualization_msgs.msg import Marker, MarkerArray
-from rclpy.qos import QoSProfile, ReliabilityPolicy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, QoSReliabilityPolicy, QoSDurabilityPolicy
 from rclpy.executors import MultiThreadedExecutor 
 from nav2_msgs.srv import ClearEntireCostmap
 import time
@@ -45,6 +45,7 @@ class NavigationNode(Node):
 
         self.state_lock = threading.Lock()
         self.pose_lock = threading.Lock()
+        self.kidnap_lock = threading.Lock()
         self.buffer_lock = threading.Lock()
 
         self.costmap_service_busy = False
@@ -53,6 +54,12 @@ class NavigationNode(Node):
                         reliability=ReliabilityPolicy.RELIABLE,
                         depth=10
                     )
+        
+        self.qos_best_effort_volatile = QoSProfile(
+            depth=1, 
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.VOLATILE 
+        )
 
         self._setup_subscriptions()
         self._setup_navigation()
@@ -81,7 +88,7 @@ class NavigationNode(Node):
             KidnapStatus,
             '/kidnap_status',
             self._kidnap_status_callback,
-            self.qos_profile
+            self.qos_best_effort_volatile
         )
 
     def _setup_navigation(self):
@@ -132,12 +139,16 @@ class NavigationNode(Node):
     def _amcl_pose_callback(self, msg):
         """Thread-safe pose update"""
         with self.pose_lock:
-            self.current_robot_pose = msg.pose.pose
+            self.current_robot_pose = msg.pose
 
     def _kidnap_status_callback(self, msg):
         """Thread-safe kidnap status update"""
-        with self.state_lock:
+        with self.kidnap_lock:
             self.kidnap_state = True if msg.is_kidnapped else False
+
+        if msg.is_kidnapped:
+            with self.state_lock:
+                self.state = NavState.KIDNAP
 
     def fsm_step(self):
         with self.state_lock:
@@ -205,8 +216,8 @@ class NavigationNode(Node):
 
         with self.pose_lock:
             if self.current_goal is not None:
-                dx = self.current_goal.pose.position.x - self.current_robot_pose.position.x
-                dy = self.current_goal.pose.position.y - self.current_robot_pose.position.y
+                dx = self.current_goal.pose.position.x - self.current_robot_pose.pose.position.x
+                dy = self.current_goal.pose.position.y - self.current_robot_pose.pose.position.y
 
         if dx and dy:
             dist = math.hypot(dx, dy)
@@ -243,13 +254,46 @@ class NavigationNode(Node):
         # POSSIAMO ANCHE METTERE DIRETTAMENTE ELSE RECOVERY
 
     def _on_kidnap(self):
-        # Logica per gestire il kidnap da rivedere quando la implementazione sarà più chiara
-    
-        self.state = NavState.GO_FINAL
+        if not self.kidnap_detected():
+            self.get_logger().info("Kidnap resolved. Resuming navigation.")
+            
+            self.current_goal = None
+            self.midpoint_buffer.clear()
+            self.navigator.clearAllCostmaps()
+            self.navigator.cancelTask()
+            
+
+            yaw = math.radians(math.degrees(self.extract_yaw(self.current_robot_pose) + 360) % 360)
+            goal_yaw = math.radians(self.compute_orientation_towards(self.current_robot_pose, self.final_goal))
+            normalized_yaw = self._normalize_angle(goal_yaw - yaw)
+            
+            self.get_logger().info(f"Current yaw: {(math.degrees(yaw)):.2f}, Goal yaw: {math.degrees(goal_yaw):.2f}, Rotation needed: {math.degrees(normalized_yaw):.2f}")
+
+            time.sleep(1.0)
+            
+            self.navigator.spin(spin_dist=normalized_yaw, time_allowance=20)
+            
+            with self.buffer_lock:
+                self.midpoint_buffer.clear()
+            
+            second_spin = -math.copysign(math.radians(60), normalized_yaw)
+
+            time.sleep(1.0)
+            self.navigator.spin(spin_dist=second_spin, time_allowance=20)
+
+            self.state = NavState.RECOVERY
+        
+        else:
+            self.get_logger().info("Handling kidnap event.")
+
+            self.current_goal = None
+            self.midpoint_buffer.clear()
+            self.navigator.clearAllCostmaps()
+            self.navigator.cancelTask()
 
     def kidnap_detected(self):
         """Check if a kidnap event has occurred."""
-        with self.pose_lock:
+        with self.kidnap_lock:
             if self.kidnap_state:
                 self.get_logger().warn("Kidnap detected!")
                 return True
@@ -275,6 +319,13 @@ class NavigationNode(Node):
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         return math.atan2(siny_cosp, cosy_cosp)
+
+    def _normalize_angle(self, angle):
+        # riporta in (-pi, pi]
+        a = (angle + math.pi) % (2.0 * math.pi)
+        if a <= 0.0:
+            a += 2.0 * math.pi
+        return a - math.pi
 
     def compute_orientation_towards(self, current_pose, target_pose):
         """Calcola il quaternion orientato verso il target_pose."""
@@ -328,7 +379,7 @@ class NavigationNode(Node):
         pose.header.stamp = self.get_clock().now().to_msg()
         with self.pose_lock:
             if self.current_robot_pose is not None:
-                pose.pose = self.current_robot_pose
+                pose.pose = self.current_robot_pose.pose
         return pose
     
 def main(args=None):

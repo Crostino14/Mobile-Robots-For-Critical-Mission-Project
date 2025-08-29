@@ -5,15 +5,11 @@ from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 import rclpy.time
 import tf2_geometry_msgs
 from tf2_geometry_msgs import PointStamped  # This registers the type with tf2
-from turtlebot4_navigation.turtlebot4_navigator import TurtleBot4Navigator
-import json
 import math
-import argparse
 import threading
 from nav_interfaces.msg import ConeDetection, ConeDetectionArray
 import tf2_ros
 from sensor_msgs.msg import CameraInfo
-from image_geometry import PinholeCameraModel
 
 """ Tutte le variabili, metodi e invocazioni commentati servono per provare a calcolare il punto intermedio laterale ai coni rispetto alla mappa piuttosto che rispetto al camera frame, perché ho notato che i punti ad esempio vengono generati avanti al cono nelle direzione del goal finale, piuttosto che effettivamente a lato. È solo un'idea e va testata a settembre, non è stata proprio provata"""
 
@@ -23,13 +19,11 @@ class PoseEstimatorNode(Node):
 
         self.bot_width = 0.20
         self.add_space = 0.3
-        #self._pose_lock = threading.Lock()
+        self._pose_lock = threading.Lock()
 
         self.camera_ready = False
         self.model = None
-        #self.current_robot_pose = None
-
-        self.navigator = TurtleBot4Navigator()
+        self.current_robot_pose = None
 
         self.depth_width = 1280  # Imposta questi in base alla tua pipeline
         self.depth_height = 720
@@ -41,12 +35,9 @@ class PoseEstimatorNode(Node):
         # Camera info
         self._camera_info_sub = self.create_subscription(CameraInfo, '/oakd/stereo/camera_info', self._camera_info_callback, 10)
 
-        #self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self._amcl_pose_callback, 10)
+        self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self._amcl_pose_callback, 10)
 
         self.publisher = self.create_publisher(PoseStamped, '/intermediate_waypoint', 10)
-
-        self.get_logger().info("Waiting for Nav2 to become active...")
-        self.navigator.waitUntilNav2Active()
 
     def _camera_info_callback(self, msg):
         if not self.camera_ready:
@@ -58,20 +49,42 @@ class PoseEstimatorNode(Node):
             self.camera_ready = True
             self.destroy_subscription(self._camera_info_sub)
     
-    """def _amcl_pose_callback(self, msg):
+    def _amcl_pose_callback(self, msg):
         #Thread-safe pose update
         with self._pose_lock:
-            self.current_robot_pose = msg.pose.pose"""
+            self.current_robot_pose = msg.pose.pose
 
     def publish_mid_pose(self, mid_pose=None):
 
         x, y = mid_pose
 
-        new_pose = self.navigator.getPoseStamped([x, y], 0)
+        new_pose = self.getPoseStamped([x, y], 0)
 
         self.publisher.publish(new_pose)
         return
-       
+
+    def getPoseStamped(self, position, rotation):
+        """
+        Fill and return a PoseStamped message.
+
+        :param position: A list consisting of the x and y positions for the Pose. e.g [0.5, 1.2]
+        :param rotation: Rotation of the pose about the Z axis in degrees.
+        :return: PoseStamped message
+        """
+        pose = PoseStamped()
+
+        pose.header.frame_id = 'map'
+        pose.header.stamp = self.get_clock().now().to_msg()
+
+        pose.pose.position.x = position[0]
+        pose.pose.position.y = position[1]
+
+        # Convert Z rotation to quaternion
+        pose.pose.orientation.z = math.sin(math.radians(rotation) / 2)
+        pose.pose.orientation.w = math.cos(math.radians(rotation) / 2)
+
+        return pose
+
     def cone_callback(self, msg):
         if not self.camera_ready:
             self.get_logger().warn("Camera not yet ready. Skipping cone callback.")
@@ -86,8 +99,6 @@ class PoseEstimatorNode(Node):
         y2 = closest_cone.y_max
         depth = closest_cone.depth
         
-        # PER SETTEMBRE: soglia inferiore testata, abbassando il robot andava troppo oltre i coni, questa era la migliore
-
         if depth < 1.2:
             self.get_logger().warn("Cone depth is too close")
             return
@@ -132,8 +143,6 @@ class PoseEstimatorNode(Node):
         if self.camera_info is None:
             self.get_logger().warn("Camera info not yet received.")
             return None
-
-        # PER SETTEMBRE: la modifica alla depth era per evitare che punti venissero messi nel od oltre il muro, inizialmente vi era anche nella Y ma provando non abbiamo notato differenze sostanziali.
 
         if depth_m > 1.5:
             X = (x_rgb - self.cx) * (depth_m - 0.45) / self.fx
@@ -224,7 +233,7 @@ class PoseEstimatorNode(Node):
 
         # 4) Crea il gemello virtuale in base_link spostando SOLO lungo y
         #    half_gate = metà larghezza porta desiderata (robot/2 + margine)
-        half_gate = 0.5  # es. 0.1 + 0.3 = 0.4 m
+        half_gate = 0.8  # es. 0.1 + 0.3 = 0.4 m
         #    Il gemello sta a ±(2*half_gate) in y; il centro sarà a ±half_gate.
         color_l = color.lower()
         if "yellow" in color_l:
