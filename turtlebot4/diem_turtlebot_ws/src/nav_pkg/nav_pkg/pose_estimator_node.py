@@ -195,73 +195,40 @@ class PoseEstimatorNode(Node):
         return x_goal, y_goal
 
     def single_cone_transform(self, depth_m, pixel, color):
-        # 1) Trasformazioni necessarie: camera->base_link e base_link->map
         try:
-            if not self.tf_buffer.can_transform("base_link", self.rgb_frame_id, rclpy.time.Time(),
-                                                timeout=rclpy.duration.Duration(seconds=1.0)):
-                self.get_logger().warn("Transform camera->base_link non pronto")
+            if not self.tf_buffer.can_transform("map", self.rgb_frame_id, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=1.0)):
+                self.get_logger().warn("Transform not available yet")
                 return None
-            T_cam_to_bl = self.tf_buffer.lookup_transform(
-                "base_link", self.rgb_frame_id, rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0)
-            )
 
-            if not self.tf_buffer.can_transform("map", "base_link", rclpy.time.Time(),
-                                                timeout=rclpy.duration.Duration(seconds=1.0)):
-                self.get_logger().warn("Transform base_link->map non pronto")
-                return None
-            T_bl_to_map = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0)
-            )
+            transform_map = self.tf_buffer.lookup_transform("map", self.rgb_frame_id, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=1.0))
+
         except (tf2_ros.LookupException, tf2_ros.ExtrapolationException) as e:
             self.get_logger().warn(f"Transform error: {e}")
             return None
 
-        # 2) Punto 3D del cono nel frame camera
-        u, v = pixel
-        x_cam, y_cam, z_cam = self.pixel_to_3d(u, v, depth_m)
-        p_cam = PointStamped()
-        p_cam.header.frame_id = self.rgb_frame_id
-        p_cam.header.stamp = rclpy.time.Time().to_msg()
-        p_cam.point.x, p_cam.point.y, p_cam.point.z = x_cam, y_cam, z_cam
+        # === STEP 1: Calcola punto 3D nel frame della camera ===
+        x, y, z = self.pixel_to_3d(pixel[0], pixel[1], depth_m)
+        self.get_logger().info(f"Original camera point: ({x:.2f}, {y:.2f}, {z:.2f})")
 
-        # 3) Porta il cono in base_link
-        p_bl = tf2_geometry_msgs.do_transform_point(p_cam, T_cam_to_bl)
-        x_bl, y_bl = p_bl.point.x, p_bl.point.y
-        self.get_logger().info(f"Cone in base_link: ({x_bl:.2f}, {y_bl:.2f})")
+        # === STEP 2: Applica offset laterale ===
+        side = +1 if "red" in color.lower() else -1
+        offset_side = side * 0.7  # puoi usare self.bot_width / 2 + add_space se preferisci
+        x += offset_side
+        self.get_logger().info(f"Offset applied in camera frame: {offset_side:.2f} → new y: {y:.2f}")
 
-        # 4) Crea il gemello virtuale in base_link spostando SOLO lungo y
-        #    half_gate = metà larghezza porta desiderata (robot/2 + margine)
-        half_gate = 0.8  # es. 0.1 + 0.3 = 0.4 m
-        #    Il gemello sta a ±(2*half_gate) in y; il centro sarà a ±half_gate.
-        color_l = color.lower()
-        if "yellow" in color_l:
-            # devo passare a sinistra del giallo → rosso virtuale a destra (y - 2*half_gate)
-            y_center_bl = y_bl + half_gate
-        elif "red" in color_l:
-            # devo passare a destra del rosso → giallo virtuale a sinistra (y + 2*half_gate)
-            y_center_bl = y_bl - half_gate
-        else:
-            self.get_logger().warn("Colore cono non riconosciuto, abort.")
-            return None
+        # === STEP 3: Trasforma nel frame map ===
+        point = PointStamped()
+        point.header.frame_id = self.rgb_frame_id
+        point.header.stamp = rclpy.time.Time().to_msg()
+        point.point.x = x
+        point.point.y = y
+        point.point.z = z
 
-        x_center_bl = x_bl  # stessa x del cono (nessuna correzione angolare, come richiesto)
+        point_map = tf2_geometry_msgs.do_transform_point(point, transform_map)
+        self.get_logger().info(f"Final map point: ({point_map.point.x:.2f}, {point_map.point.y:.2f})")
 
-        # 5) Trasforma il centro porta in map (equivalente alla media dopo trasformazione rigida)
-        center_bl = PointStamped()
-        center_bl.header.frame_id = "base_link"
-        center_bl.header.stamp = rclpy.time.Time().to_msg()
-        center_bl.point.x = x_center_bl
-        center_bl.point.y = y_center_bl
-        center_bl.point.z = 0.0
-
-        center_map = tf2_geometry_msgs.do_transform_point(center_bl, T_bl_to_map)
-
-        x_goal = round(center_map.point.x, 2)
-        y_goal = round(center_map.point.y, 2)
-
-        self.get_logger().info(f"Single-cone center -> map: ({x_goal:.2f}, {y_goal:.2f})")
+        x_goal = round(point_map.point.x, 2)
+        y_goal = round(point_map.point.y, 2)
         return x_goal, y_goal
 
 def main(args=None):
