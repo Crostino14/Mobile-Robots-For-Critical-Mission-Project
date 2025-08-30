@@ -22,7 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "cone_detector_node = nav_pkg.cone_detector_node:main",
+            "cone_detection_node = nav_pkg.cone_detection_node:main",
             "pose_estimator_node = nav_pkg.pose_estimator_node:main",
             "navigation_node = nav_pkg.navigation_node:main"
         ],
