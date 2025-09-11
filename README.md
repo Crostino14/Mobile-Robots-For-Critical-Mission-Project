@@ -13,40 +13,6 @@ The design is modular and reactive, leveraging ROS 2 publish/subscribe for inte
 
 ![System architecture](docs/architecture.jpeg)
 
-- **cone_detection_node**: 
-  Detects cones from the RGB and depth streams using YOLOv8 and estimates distance.
-
-- **pose_estimator_node**:
-  Selects valid cones, computes midpoints or lateral offsets, and publishes intermediate waypoints.
-
-- **navigation_node**:
-  Supervises the mission using a finite state machine (FSM), manages intermediate waypoints, and handles recovery/kidnap situations.
-
----
-
-## 🔄 Finite State Machine (FSM)
-
-<img src="docs/fsm.jpeg" alt="Finite State Machine Diagram" width="500">
-
-The navigation supervisor implements a **finite state machine** with five primary states:
-
-- `GO_FINAL`: initial state — navigate to the final mission goal.
-- `RECOVERY`: handle navigation failures or interruptions.
-- `NAVIGATING_MID`: navigate to intermediate waypoints proposed by perception.
-- `KIDNAP`: handle kidnapping/localisation-reset events.
-- `MISSION_COMPLETE`: final goal reached; perform cleanup and shut down.
-
-**Key transitions (from the report)**:
-- `GO_FINAL` → `MISSION_COMPLETE` when the final goal is reached.
-- `GO_FINAL` → `RECOVERY` if navigation fails or is cancelled.
-- `RECOVERY` → `KIDNAP` when the `/kidnap_status` topic indicates a kidnap event.
-- `RECOVERY` → `NAVIGATING_MID` when enough buffered intermediate waypoints are available (buffer limit 12; threshold for detour = 4 proposals).
-- After `KIDNAP` the node performs cleanup and controlled rotations (align to goal, then sweep ~60°) before returning to `RECOVERY`.
-
----
-
-## 🧱 Main modules and components
-
 ### `cone_detection_node.py`
 - **Role**: Detect cones in RGB frames and estimate their distance using the stereo/depth stream. Publishes detections for downstream processing.
 - **Key implementation points**:
@@ -82,9 +48,7 @@ The navigation supervisor implements a **finite state machine** with five primar
   - Kidnap handling: on kidnap detection the node clears waypoints and active navigation tasks, performs controlled rotations to aid relocalisation (align to final goal, then a ~60° sweep), and returns to `RECOVERY`.
   - The navigation node uses thread locks to protect shared data and a multi-threaded executor is used in `main()`.
 
----
-
-## 🛠️ Custom message types
+### 🛠️ Custom message types
 There are two custom messages for detection:
 
 - `ConeDetection` — single-cone data (bounding box coordinates, centroid, detected colour, estimated distance).
@@ -92,10 +56,24 @@ There are two custom messages for detection:
 
 ---
 
-## ❌ Limitations and constraints (as reported)
-- **Hardware instability** on some TurtleBot4 units (camera crashes or lag).
-- **Battery and availability constraints** reduced real-world testing time.
-- **Adverse lighting and reflective surfaces** can cause missed detections; mismatch between RGB preview and stereo depth resolution required preview reconfiguration and resizing in code.
+## 🔄 Finite State Machine (FSM)
+
+The navigation supervisor implements a **finite state machine** with five primary states:
+
+- `GO_FINAL`: initial state — navigate to the final mission goal.
+- `RECOVERY`: handle navigation failures or interruptions.
+- `NAVIGATING_MID`: navigate to intermediate waypoints proposed by perception.
+- `KIDNAP`: handle kidnapping/localisation-reset events.
+- `MISSION_COMPLETE`: final goal reached; perform cleanup and shut down.
+
+<img src="docs/fsm.jpeg" alt="Finite State Machine Diagram" width="500">
+
+**Key transitions (from the report)**:
+- `GO_FINAL` → `MISSION_COMPLETE` when the final goal is reached.
+- `GO_FINAL` → `RECOVERY` if navigation fails or is cancelled.
+- `RECOVERY` → `KIDNAP` when the `/kidnap_status` topic indicates a kidnap event.
+- `RECOVERY` → `NAVIGATING_MID` when enough buffered intermediate waypoints are available (buffer limit 12; threshold for detour = 4 proposals).
+- After `KIDNAP` the node performs cleanup and controlled rotations (align to goal, then sweep ~60°) before returning to `RECOVERY`.
 
 ---
 
@@ -147,5 +125,12 @@ ros2 run nav_pkg cone_detection_node
 ros2 run nav_pkg pose_estimator_node
 ros2 run nav_pkg navigation_node
 ```
+
+---
+
+## ❌ Limitations and constraints (as reported)
+- **Hardware instability** on some TurtleBot4 units (camera crashes or lag).
+- **Battery and availability constraints** reduced real-world testing time.
+- **Adverse lighting and reflective surfaces** can cause missed detections; mismatch between RGB preview and stereo depth resolution required preview reconfiguration and resizing in code.
 
 ---
