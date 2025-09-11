@@ -58,6 +58,8 @@ There are two custom messages for detection:
 
 ## 🔄 Finite State Machine (FSM)
 
+<img src="docs/fsm.jpeg" alt="Finite State Machine Diagram" width="500">
+
 The navigation supervisor implements a **finite state machine** with five primary states:
 
 - `GO_FINAL`: initial state — navigate to the final mission goal.
@@ -66,9 +68,7 @@ The navigation supervisor implements a **finite state machine** with five primar
 - `KIDNAP`: handle kidnapping/localisation-reset events.
 - `MISSION_COMPLETE`: final goal reached; perform cleanup and shut down.
 
-<img src="docs/fsm.jpeg" alt="Finite State Machine Diagram" width="500">
-
-**Key transitions (from the report)**:
+**Key transitions **:
 - `GO_FINAL` → `MISSION_COMPLETE` when the final goal is reached.
 - `GO_FINAL` → `RECOVERY` if navigation fails or is cancelled.
 - `RECOVERY` → `KIDNAP` when the `/kidnap_status` topic indicates a kidnap event.
