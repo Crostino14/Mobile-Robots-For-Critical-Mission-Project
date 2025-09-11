@@ -1,7 +1,11 @@
 # Design and Implementation of a Cone-Guided Navigation System Using ROS 2 and TurtleBot4 🐢📡
 
+---
+
 ## 🏬 Project Overview
 The project implements a **ROS 2-based navigation architecture for a TurtleBot4** tasked with reaching a predefined goal within a known **indoor environment** while respecting **traversal rules imposed by colour-coded cones**. The system computes feasible paths, avoids static and dynamic obstacles, and enforces rules (pass to the left or right of cones depending on their colour). The architecture also includes recovery behaviours for localisation loss (the "**kidnapped robot**" scenario).
+
+---
 
 ## 🏛️ ROS 2 architecture overview
 The design is modular and reactive, leveraging ROS 2 publish/subscribe for inter-component communication. Perception, pose estimation, planning and high-level supervision are implemented as separate nodes communicating via topics.
@@ -19,6 +23,8 @@ The design is modular and reactive, leveraging ROS 2 publish/subscribe for inte
 
 - **navigation_node**:
   Supervises the mission using a finite state machine (FSM), manages intermediate waypoints, and handles recovery/kidnap situations.
+
+---
 
 ## 🔄 Finite State Machine (FSM)
 
@@ -38,6 +44,8 @@ The navigation supervisor implements a **finite state machine** with five primar
 - `RECOVERY` → `KIDNAP` when the `/kidnap_status` topic indicates a kidnap event.
 - `RECOVERY` → `NAVIGATING_MID` when enough buffered intermediate waypoints are available (buffer limit 12; threshold for detour = 4 proposals).
 - After `KIDNAP` the node performs cleanup and controlled rotations (align to goal, then sweep ~60°) before returning to `RECOVERY`.
+
+---
 
 ## 🧱 Main modules and components
 
@@ -76,16 +84,22 @@ The navigation supervisor implements a **finite state machine** with five primar
   - Kidnap handling: on kidnap detection the node clears waypoints and active navigation tasks, performs controlled rotations to aid relocalisation (align to final goal, then a ~60° sweep), and returns to `RECOVERY`.
   - The navigation node uses thread locks to protect shared data and a multi-threaded executor is used in `main()`.
 
+---
+
 ## 🛠️ Custom message types
 There are two custom messages for detection:
 
 - `ConeDetection` — single-cone data (bounding box coordinates, centroid, detected colour, estimated distance).
 - `ConeDetectionArray` — array of `ConeDetection` messages for a single frame.
 
+---
+
 ## ❌ Limitations and constraints (as reported)
 - **Hardware instability** on some TurtleBot4 units (camera crashes or lag).
 - **Battery and availability constraints** reduced real-world testing time.
 - **Adverse lighting and reflective surfaces** can cause missed detections; mismatch between RGB preview and stereo depth resolution required preview reconfiguration and resizing in code.
+
+---
 
 ## ⚙️ Installation and start-up
 The repository contains helper scripts that automate the typical run sequence. The instructions below assume a Linux/WSL environment with ROS 2 and `colcon` installed.
@@ -135,3 +149,5 @@ ros2 run nav_pkg cone_detection_node
 ros2 run nav_pkg pose_estimator_node
 ros2 run nav_pkg navigation_node
 ```
+
+---
