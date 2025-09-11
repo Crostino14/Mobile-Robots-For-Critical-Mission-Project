@@ -11,7 +11,7 @@ The design is modular and reactive, leveraging ROS 2 publish/subscribe for inte
 - **Communication**: primarily via topics (the navigation stack itself may use services/actions internally).
 - **Modularity**: distinct nodes for cone detection, intermediate waypoint estimation and navigation supervision.
 
-![System architecture](docs/architecture.png)
+![System architecture](docs/architecture.jpeg)
 
 **cone_detection_node**
   Detects cones from the RGB and depth streams using YOLOv8 and estimates distance.
@@ -38,7 +38,7 @@ The navigation supervisor implements a **finite state machine** with five primar
 - `RECOVERY` → `NAVIGATING_MID` when enough buffered intermediate waypoints are available (buffer limit 12; threshold for detour = 4 proposals).
 - After `KIDNAP` the node performs cleanup and controlled rotations (align to goal, then sweep ~60°) before returning to `RECOVERY`.
 
-![FSM](docs/fsm.png)
+![FSM](docs/fsm.jpeg)
 
 ## 🧱 Main modules and components
 
