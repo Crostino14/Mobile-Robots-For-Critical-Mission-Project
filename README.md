@@ -92,7 +92,7 @@ There are two custom messages for detection:
 ## ⚙️ Installation and start-up
 The repository contains helper scripts that automate the typical run sequence. The instructions below assume a Linux/WSL environment with ROS 2 and `colcon` installed.
 
-⚠️ **The system has been implemented and test on Ubuntu 22.04** ⚠️
+⚠️ **The system has been implemented and tested on Ubuntu 22.04** ⚠️
 
 1. Clone the repository and enter the workspace:
 
