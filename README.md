@@ -131,4 +131,10 @@ ros2 run nav_pkg navigation_node
 ## 📄 Project Report
 [📑 View the full project report (PDF)](docs/Mobile-Project-Group4.pdf)
 
----
+--- 
+
+## 👨‍💻 Authors
+
+- **Agostino Cardamone** — [a.cardamone7@studenti.unisa.it](mailto:a.cardamone7@studenti.unisa.it)
+- **Chiara Ferraioli** — [c.ferraioli30@studenti.unisa.it](mailto:c.ferraioli30@studenti.unisa.it)
+- **Asja Antonucci** — [a.antonucci5@studenti.unisa.it](mailto:a.antonucci5@studenti.unisa.it)
