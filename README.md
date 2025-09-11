@@ -1,8 +1,6 @@
 # Design and Implementation of a Cone-Guided Navigation System Using ROS 2 and TurtleBot4 🐢📡
 
-This repository contains the final project for the course **"Mobile Robots for Critical Missions" (2024/2025)**.
-
-## 🎯 Purpose
+## 🏬 Project Overview
 The project implements a **ROS 2-based navigation architecture for a TurtleBot4** tasked with reaching a predefined goal within a known **indoor environment** while respecting **traversal rules imposed by colour-coded cones**. The system computes feasible paths, avoids static and dynamic obstacles, and enforces rules (pass to the left or right of cones depending on their colour). The architecture also includes recovery behaviours for localisation loss (the "**kidnapped robot**" scenario).
 
 ## 🏛️ ROS 2 architecture overview
