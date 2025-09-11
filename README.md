@@ -16,16 +16,17 @@ The design is modular and reactive, leveraging ROS 2 publish/subscribe for inte
 - **cone_detection_node**: 
   Detects cones from the RGB and depth streams using YOLOv8 and estimates distance.
 
-- **pose_estimator_node** :
+- **pose_estimator_node**:
   Selects valid cones, computes midpoints or lateral offsets, and publishes intermediate waypoints.
 
 - **navigation_node**:
   Supervises the mission using a finite state machine (FSM), manages intermediate waypoints, and handles recovery/kidnap situations.
 
 ## 🔄 Finite State Machine (FSM)
-The navigation supervisor implements a **finite state machine** with five primary states:
 
-![FSM](docs/fsm.jpeg)
+<img src="docs/fsm.jpeg" alt="Finite State Machine Diagram" width="500">
+
+The navigation supervisor implements a **finite state machine** with five primary states:
 
 - `GO_FINAL`: initial state — navigate to the final mission goal.
 - `RECOVERY`: handle navigation failures or interruptions.
