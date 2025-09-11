@@ -1,29 +1,29 @@
 # Design and Implementation of a Cone-Guided Navigation System Using ROS 2 and TurtleBot4 🐢📡
 
-This repository contains the final project for the course "Mobile Robots for Critical Missions" (2024/2025) — Group 04: Agostino Cardamone, Chiara Ferraioli and Asja Antonucci.
+This repository contains the final project for the course **"Mobile Robots for Critical Missions" (2024/2025)**.
 
 ## 🎯 Purpose
-The project implements a ROS 2-based navigation architecture for a TurtleBot4 tasked with reaching a predefined goal within a known indoor environment while respecting traversal rules imposed by colour-coded cones. The system computes feasible paths, avoids static and dynamic obstacles, and enforces rules (pass to the left or right of cones depending on their colour). The architecture also includes recovery behaviours for localisation loss (the "kidnapped robot" scenario).
+The project implements a **ROS 2-based navigation architecture for a TurtleBot4** tasked with reaching a predefined goal within a known **indoor environment** while respecting **traversal rules imposed by colour-coded cones**. The system computes feasible paths, avoids static and dynamic obstacles, and enforces rules (pass to the left or right of cones depending on their colour). The architecture also includes recovery behaviours for localisation loss (the "**kidnapped robot**" scenario).
 
 ## 🏛️ ROS 2 architecture overview
 The design is modular and reactive, leveraging ROS 2 publish/subscribe for inter-component communication. Perception, pose estimation, planning and high-level supervision are implemented as separate nodes communicating via topics.
 
-- Communication: primarily via topics (the navigation stack itself may use services/actions internally).
-- Modularity: distinct nodes for cone detection, intermediate waypoint estimation and navigation supervision.
+- **Communication**: primarily via topics (the navigation stack itself may use services/actions internally).
+- **Modularity**: distinct nodes for cone detection, intermediate waypoint estimation and navigation supervision.
 
 ![System architecture](docs/architecture.png)
 
-cone_detection_node
-Detects cones from the RGB and depth streams using YOLOv8 and estimates distance.
+**cone_detection_node**
+  Detects cones from the RGB and depth streams using YOLOv8 and estimates distance.
 
-pose_estimator_node
-Selects valid cones, computes midpoints or lateral offsets, and publishes intermediate waypoints.
+**pose_estimator_node**
+  Selects valid cones, computes midpoints or lateral offsets, and publishes intermediate waypoints.
 
-navigation_node
-Supervises the mission using a finite state machine (FSM), manages intermediate waypoints, and handles recovery/kidnap situations.
+**navigation_node**
+  Supervises the mission using a finite state machine (FSM), manages intermediate waypoints, and handles recovery/kidnap situations.
 
 ## 🔄 Finite State Machine (FSM)
-The navigation supervisor implements a finite state machine with five primary states:
+The navigation supervisor implements a **finite state machine** with five primary states:
 
 - `GO_FINAL`: initial state — navigate to the final mission goal.
 - `RECOVERY`: handle navigation failures or interruptions.
@@ -31,7 +31,7 @@ The navigation supervisor implements a finite state machine with five primary st
 - `KIDNAP`: handle kidnapping/localisation-reset events.
 - `MISSION_COMPLETE`: final goal reached; perform cleanup and shut down.
 
-Key transitions (from the report):
+**Key transitions (from the report)**:
 - `GO_FINAL` → `MISSION_COMPLETE` when the final goal is reached.
 - `GO_FINAL` → `RECOVERY` if navigation fails or is cancelled.
 - `RECOVERY` → `KIDNAP` when the `/kidnap_status` topic indicates a kidnap event.
@@ -41,11 +41,10 @@ Key transitions (from the report):
 ![FSM](docs/fsm.png)
 
 ## 🧱 Main modules and components
-Summary of the primary modules described in the report and visible in the codebase:
 
 ### `cone_detection_node.py`
-- Role: Detect cones in RGB frames and estimate their distance using the stereo/depth stream. Publishes detections for downstream processing.
-- Key implementation points:
+- **Role**: Detect cones in RGB frames and estimate their distance using the stereo/depth stream. Publishes detections for downstream processing.
+- **Key implementation points**:
   - Subscribes to `/oakd/rgb/preview/image_raw` (RGB preview) and `/oakd/stereo/image_raw` (depth image).
   - Uses CvBridge to convert ROS Image messages to OpenCV BGR images; resizes RGB to (1280,720) for processing.
   - Detector: Ultralytics YOLOv8 model (the code loads a local model file `cone.pt` by default).
@@ -55,8 +54,8 @@ Summary of the primary modules described in the report and visible in the codeba
   - Notes from source: the YOLO model path is hard-coded and the node expects depth encodings `16UC1` or `32FC1`.
 
 ### `pose_estimator_node.py`
-- Role: Convert cone detections into intermediate waypoints (map-frame `PoseStamped`) that respect cone-passing rules.
-- Key implementation points:
+- **Role**: Convert cone detections into intermediate waypoints (map-frame `PoseStamped`) that respect cone-passing rules.
+- **Key implementation points**:
   - Subscribes to `/detected_cones` (`nav_interfaces/ConeDetectionArray`), `/oakd/stereo/camera_info` (for intrinsics) and `/amcl_pose`.
   - On first camera-info reception it stores intrinsics (fx, fy, cx, cy) and then destroys the intrinsics subscription.
   - Behaviour: selects the closest valid cone (filters out cones with depth < 1.2 m or > 3.5 m), searches for an aligned cone of opposite colour to compute a midpoint; if no partner is found it applies a lateral offset to a single cone (offset sign depends on cone colour).
@@ -65,8 +64,8 @@ Summary of the primary modules described in the report and visible in the codeba
   - The node uses conservative TF timeouts and thread locks to protect shared state.
 
 ### `navigation_node.py`
-- Role: High-level supervisor implementing a finite-state controller that drives the robot to the final mission goal while accepting and handling intermediate waypoints.
-- Key implementation points:
+- **Role**: High-level supervisor implementing a finite-state controller that drives the robot to the final mission goal while accepting and handling intermediate waypoints.
+- **Key implementation points**:
   - Implements an FSM with states: `GO_FINAL`, `RECOVERY`, `NAVIGATING_MID`, `KIDNAP`, `MISSION_COMPLETE`.
   - Subscribes to `/intermediate_waypoint` (`geometry_msgs/PoseStamped`), `/amcl_pose` (`PoseWithCovarianceStamped`) and `/kidnap_status` (`irobot_create_msgs/KidnapStatus`).
   - Uses a `TurtleBot4Navigator` wrapper to interact with the navigation stack (methods expected: `getPoseStamped`, `goToPose`, `setInitialPose`, `cancelTask`, `clearAllCostmaps`, `waitUntilNav2Active`, `spin`, etc.).
@@ -79,20 +78,20 @@ Summary of the primary modules described in the report and visible in the codeba
   - The navigation node uses thread locks to protect shared data and a multi-threaded executor is used in `main()`.
 
 ## 🛠️ Custom message types
-The report and codebase define two custom messages for detection:
+There are two custom messages for detection:
 
 - `ConeDetection` — single-cone data (bounding box coordinates, centroid, detected colour, estimated distance).
 - `ConeDetectionArray` — array of `ConeDetection` messages for a single frame.
 
 ## ❌ Limitations and constraints (as reported)
-- Hardware instability on some TurtleBot4 units (camera crashes or lag).
-- Battery and availability constraints reduced real-world testing time.
-- Adverse lighting and reflective surfaces can cause missed detections; mismatch between RGB preview and stereo depth resolution required preview reconfiguration and resizing in code.
+- **Hardware instability** on some TurtleBot4 units (camera crashes or lag).
+- **Battery and availability constraints** reduced real-world testing time.
+- **Adverse lighting and reflective surfaces** can cause missed detections; mismatch between RGB preview and stereo depth resolution required preview reconfiguration and resizing in code.
 
 ## ⚙️ Installation and start-up
 The repository contains helper scripts that automate the typical run sequence. The instructions below assume a Linux/WSL environment with ROS 2 and `colcon` installed.
 
-⚠️ The system has been implemented and test on Ubuntu 22.04 ⚠️
+⚠️ **The system has been implemented and test on Ubuntu 22.04** ⚠️
 
 1. Clone the repository and enter the workspace:
 
@@ -122,7 +121,7 @@ bash src/nav_pkg/navigation.sh
 
 To launch the project nodes that implement perception and high-level control, run the provided `nodes.sh` script in `src/nav_pkg/`. This script builds `nav_pkg` (if necessary) and starts the three main nodes (`cone_detection_node`, `pose_estimator_node`, `navigation_node`) in separate terminals.
 
-🚧 Remember to change the paths 🚧
+🚧 **Remember to change the paths** 🚧
 
 Run:
 
@@ -137,9 +136,3 @@ ros2 run nav_pkg cone_detection_node
 ros2 run nav_pkg pose_estimator_node
 ros2 run nav_pkg navigation_node
 ```
-
-## Topics and messages
-- `/detected_cones` — `nav_interfaces/ConeDetectionArray`
-- `/intermediate_waypoint` — `geometry_msgs/PoseStamped`
-- `/amcl_pose` — `geometry_msgs/PoseWithCovarianceStamped`
-- `/kidnap_status` — `irobot_create_msgs/KidnapStatus`
