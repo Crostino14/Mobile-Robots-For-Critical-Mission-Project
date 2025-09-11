@@ -128,7 +128,7 @@ ros2 run nav_pkg navigation_node
 
 ---
 
-## ❌ Limitations and constraints (as reported)
+## ❌ Limitations and constraints
 - **Hardware instability** on some TurtleBot4 units (camera crashes or lag).
 - **Battery and availability constraints** reduced real-world testing time.
 - **Adverse lighting and reflective surfaces** can cause missed detections; mismatch between RGB preview and stereo depth resolution required preview reconfiguration and resizing in code.
