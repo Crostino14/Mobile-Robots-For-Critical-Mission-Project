@@ -68,7 +68,7 @@ The navigation supervisor implements a **finite state machine** with five primar
 - `KIDNAP`: handle kidnapping/localisation-reset events.
 - `MISSION_COMPLETE`: final goal reached; perform cleanup and shut down.
 
-**Key transitions **:
+**Key transitions**:
 - `GO_FINAL` → `MISSION_COMPLETE` when the final goal is reached.
 - `GO_FINAL` → `RECOVERY` if navigation fails or is cancelled.
 - `RECOVERY` → `KIDNAP` when the `/kidnap_status` topic indicates a kidnap event.
