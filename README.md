@@ -85,7 +85,7 @@ The repository contains helper scripts that automate the typical run sequence. T
 1. Clone the repository and enter the workspace:
 
 ```bash
-git clone (https://github.com/Crostino14/Mobile-Robots-For-Critical-Mission-Project)
+git clone https://github.com/Crostino14/Mobile-Robots-For-Critical-Mission-Project
 cd Mobile-Robots-For-Critical-Mission-Project/turtlebot4/diem_turtlebot_ws
 ```
 
