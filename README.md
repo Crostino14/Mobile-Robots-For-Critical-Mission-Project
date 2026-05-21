@@ -1,4 +1,22 @@
-# 🐢 Design and Implementation of a Cone-Guided Navigation System Using ROS 2 and TurtleBot4 
+<div align="center">
+
+<h1>🐢 Design and Implementation of a Cone-Guided Navigation System</h1>
+<h3>ROS 2 Navigation Architecture for TurtleBot4 with Colour-Coded Cone Rules</h3>
+
+![ROS2](https://img.shields.io/badge/ROS%202-22314E?style=for-the-badge&logo=ros&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![TurtleBot4](https://img.shields.io/badge/TurtleBot4-00B140?style=for-the-badge&logo=ros&logoColor=white)
+![Nav2](https://img.shields.io/badge/Nav2-22314E?style=for-the-badge&logo=ros&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu%2022.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+
+*Modular ROS 2 architecture for autonomous TurtleBot4 navigation with YOLOv8 cone detection, stereo depth estimation, and kidnapped-robot recovery*
+
+[🏬 Overview](#-project-overview) • [🏛️ Architecture](#-ros-2-architecture-overview) • [🔄 FSM](#-finite-state-machine-fsm) • [⚙️ Installation](#-installation-and-start-up)
+
+</div>
+
+---
 
 ## 🏬 Project Overview
 The project implements a **ROS 2-based navigation architecture for a TurtleBot4** tasked with reaching a predefined goal within a known **indoor environment** while respecting **traversal rules imposed by colour-coded cones**. The system computes feasible paths, avoids static and dynamic obstacles, and enforces rules (pass to the left or right of cones depending on their colour). The architecture also includes recovery behaviours for localisation loss (the "**kidnapped robot**" scenario).
@@ -135,6 +153,6 @@ ros2 run nav_pkg navigation_node
 
 ## 👨‍💻 Authors
 
-- **Agostino Cardamone** — [a.cardamone7@studenti.unisa.it](mailto:a.cardamone7@studenti.unisa.it)
-- **Chiara Ferraioli** — [c.ferraioli30@studenti.unisa.it](mailto:c.ferraioli30@studenti.unisa.it)
-- **Asja Antonucci** — [a.antonucci5@studenti.unisa.it](mailto:a.antonucci5@studenti.unisa.it)
+- **Agostino Cardamone**
+- **Chiara Ferraioli**
+- **Asja Antonucci** 
